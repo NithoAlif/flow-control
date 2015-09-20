@@ -15,7 +15,7 @@
 #define LF 10 /* Line Feed */
 #define NAK 21 /* Negative Acknowledgement */
 #define Endfile 26 /* End of file character */
-#define ESC 27 /* ESC key *
+#define ESC 27 /* ESC key */
 
 /* XON/XOFF protocol */
 #define XON (0x11)
