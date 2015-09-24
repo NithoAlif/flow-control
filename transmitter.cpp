@@ -17,8 +17,6 @@
 #define XON (0x11)
 #define XOFF (0x13)
 
-#define BUFLEN 8
-
 using namespace std;
 
 /* Variabel Global */
@@ -39,13 +37,12 @@ void *sendData(void *) {
 	char current;
 	fin.open(filename, ios::in);
 	int i = 0;
-	while (!fin.eof()) {
+	while (fin.get(current)) {
 		if (bufData[0] != XOFF)
 		{
-			fin.get(current);
 			i++;
 			sprintf(buf, "%c", current);
-			if (sendto(sock_fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1) {
+			if (sendto(sock_fd, buf, 1, 0, (struct sockaddr *)&remaddr, slen)==-1) {
 				perror("sendto");
 			}
 			else {
@@ -54,14 +51,15 @@ void *sendData(void *) {
 			}
 		}
 		else {
-			printf("XOFF diterima.\n");
-			while (bufData[0] != XON) {
-				printf("Menunggu XON...\n");
-			}
-				printf("XON diterima.\n");
+			printf("Menunggu XON...\n");
+			sleep(1);
 		}
 	}
+	fin.close();
 	done = true;
+	close(sock_fd);
+	pthread_detach(tid[0]);
+	pthread_detach(tid[1]);
 	pthread_exit(NULL);
 }
 
@@ -69,7 +67,15 @@ void *signalXonXoff(void *)
 {
 	// Memberi sinyal XON-XOFF
 	do {
-		recvlen = recvfrom(sock_fd, bufData, strlen(bufData), 0, (struct sockaddr *)&remaddr, &slen);
+		recvlen = recvfrom(sock_fd, bufData, 1, 0, (struct sockaddr *)&remaddr, &slen);
+		if (recvlen >= 0) {
+			if (bufData[0] == XOFF) {
+				printf("XOFF diterima.\n");
+			}
+			else {
+				printf("XON diterima.\n");
+			}
+		}
 	} while (done == false);
 	pthread_exit(NULL);
 }
@@ -121,7 +127,7 @@ int main(int argc, char *argv[])
 		pthread_join(tid[0], NULL);
 		pthread_join(tid[1], NULL);
 
-		close(sock_fd);
+		//close(sock_fd);
 	}
 	return 0;
 }
