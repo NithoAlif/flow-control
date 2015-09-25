@@ -130,9 +130,11 @@ public:
 			if(sent_xonxoff[0] == XON){ // Receive data while current state is XON
 				int recvlen = recvfrom(socket_, c, 1, 0, (struct sockaddr *)&transmitter_endpoint, &addrlen);
 				if (recvlen > 0){
-					cout << "Menerima byte ke-" << received << "." << endl;
-					received++;
-					rxbuf.add(c[0]);
+					if (c[0]>32 || c[0]==CR || c[0]==LF || c[0]==Endfile){
+						cout << "Menerima byte ke-" << received << "." << endl;
+						received++;
+						rxbuf.add(c[0]);						
+					}
 				}	
 				if (rxbuf.getCount()>=UPLIMIT){ // Minimum upper limit has been reached; send the XOFF signal
 					sent_xonxoff[0] = XOFF;
@@ -141,9 +143,9 @@ public:
 						throw "Error sending XOFF signal";
 					}
 				} 
-			}		
+			}
 			usleep(DELAY * 1000);
-		} while(c[1] != Endfile);
+		} while(c[0] != Endfile);
 		consume_t.join(); // Join the buffer-consumer thread to this thread
 	}
 
@@ -152,11 +154,15 @@ public:
 		socklen_t addrlen = sizeof(*transmitter);
 		Byte c = 0;
 		int consumed = 1;
-		do{
-			if(!buf->isEmpty()){ // Consume the buffer data unless empty
+		while(c != Endfile){
+			if (!buf->isEmpty()){ // Consume the buffer data unless empty
 				buf->consume(&c);
-				cout << "Mengkonsumsi byte ke-" << consumed << ":'" << c << "'" << endl;
-				consumed++;	
+				if (c == Endfile){
+					cout << "Data has been successfully received!" << endl;
+				} else{
+					cout << "Mengkonsumsi byte ke-" << consumed << ": '" << c << "'" << endl;
+					consumed++;					
+				}
 			}
 
 			if (buf->getCount()<LOWLIMIT && sent_xonxoff[0]==XOFF){ // Maximum lower limit has been reached; send the XON signal
@@ -167,7 +173,7 @@ public:
 				}
 			}
 			usleep(DELAY * 3000);
-		} while(c != Endfile);
+		}
 	}
 
 	/* GETTER RECEIVER BOUND ADDRESS */

@@ -12,10 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <pthread.h>
-
-/* XON/XOFF protocol */
-#define XON (0x11)
-#define XOFF (0x13)
+#include "dcomm.h"
 
 using namespace std;
 
@@ -54,6 +51,12 @@ void *sendData(void *) {
 			printf("Menunggu XON...\n");
 			sleep(1);
 		}
+	}
+	// Mengirimkan EOF
+	current = Endfile;
+	sprintf(buf, "%c", current);
+	if (sendto(sock_fd, buf, 1, 0, (struct sockaddr *)&remaddr, slen)==-1) {
+		perror("sendto");
 	}
 	fin.close();
 	done = true;
